@@ -182,30 +182,26 @@ if __name__ == "__main__":
             for line in distributionFile.readlines():
                 #print("lines...")
                 if project_name in line:
-
                     #print("found project :   " + str(line))
                     context = line.split('"')
 
                     # verify project name
-                    if not context[1] == project_name:
-                        # skip non project entry
-                        continue
+                    if context[1] == project_name:
+                        # prevent formatting
+                        size_diff = len(context[3]) - len(latestTag.tag)
 
-                    # prevent formatting
-                    size_diff = len(context[3]) - len(latestTag.tag)
+                        context[2] = "," + " " * (len(context[2]) -1 + size_diff)
 
-                    context[2] = "," + " " * (len(context[2]) -1 + size_diff)
+                        # verify current version
+                        if context[3] == latestTag.tag:
+                            print(colored(project_name + " is already up-to-date!", 'green') + " within the in ")
+                            exit(0)
 
-                    # verify current version
-                    if context[3] == latestTag.tag:
-                        print(colored(project_name + " is already up-to-date!", 'green') + " within the in ")
-                        exit(0)
-
-                    # upgrade
-                    print("upgrade " + project_name + " version from " + colored(context[3], 'blue') + " to " + colored(latestTag.tag, 'green'))
-                    context[3] = latestTag.tag
-                    line = '"'.join(context)
-                    project_found = True
+                        # upgrade
+                        print("upgrade " + project_name + " version from " + colored(context[3], 'blue') + " to " + colored(latestTag.tag, 'green'))
+                        context[3] = latestTag.tag
+                        line = '"'.join(context)
+                        project_found = True
                 tmpFile.write(line)
 
     if not project_found:       

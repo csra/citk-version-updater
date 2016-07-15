@@ -17,7 +17,7 @@ setup (
        long_description='Upgrade tool for citk projects. Project tags are synchronized with the remote repository and the latest release can be configured for a given distribution.',
        
 
-       scripts=['citec.citk/citk-version-updater.py'],
+       scripts=['citec/citk/citk-version-updater.py'],
        # could also include long_description, download_url, classifiers, etc.
        
        # Declare your packages' dependencies here, for eg:
