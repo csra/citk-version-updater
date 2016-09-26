@@ -31,6 +31,7 @@ import json
 import os
 import shutil
 from termcolor import colored
+from os.path import expanduser
     
 
 #define
@@ -97,9 +98,20 @@ if __name__ == "__main__":
             # remove existing branches
             data["variables"]["branches"] = []
             
+            
+            
             # store branches
-            for branch_type in repo.branches:
-                branch = str(branch_type)
+            for branch_type in repo.refs:
+                
+                # filter local branches
+                if not branch_type.is_remote():
+                    continue
+                    
+                # filter head
+                if branch_type.remote_head == "HEAD":
+                    continue
+                    
+                branch = str(branch_type.remote_head)
                 data["variables"]["branches"].append(branch)
             
             # sort branches
@@ -138,11 +150,19 @@ if __name__ == "__main__":
         for tag_type in repo.tags:
             if version_to_force == str(tag_type):
                 forced_version_verified = True
-        for branch_type in repo.branches:
-            if version_to_force == str(tag_type):
+        for branch_type in repo.refs:
+            # filter local branches
+            if not branch_type.is_remote():
+                continue
+                
+            # filter head
+            if branch_type.remote_head == "HEAD":
+                continue
+                
+            if version_to_force == str(branch_type.remote_head):
                 forced_version_verified = True
         if not forced_version_verified:
-            print("error: the forced version " + colored(version_to_force, 'red') + " is not available for " + colored(project_file_name, 'blue') + "!")
+            print("error: the forced version " + colored(version_to_force, 'red') + " is not available for " + colored(project_name, 'blue'))
             exit(1);        
     
     # check if distribution updated is needed
@@ -153,7 +173,7 @@ if __name__ == "__main__":
     
     if version_to_force:
         # force version
-        latestTag = version_to_force
+        selected_version = version_to_force
     else:
         # dectect version
         for tag_type in repo.tags:
@@ -180,34 +200,34 @@ if __name__ == "__main__":
             currentTag = Version(major_version, minor_version, patch_version, releaseType, tag)
 
             try:
-                latestTag
+                selected_tag
             except NameError:
-                latestTag = currentTag
+                selected_tag = currentTag
                 continue
             else:
-                if currentTag.major > latestTag.major:  
-                    latestTag = currentTag
+                if currentTag.major > selected_tag.major:  
+                    selected_tag = currentTag
                     continue
-                elif currentTag.major < latestTag.major:
-                    continue
-
-                if currentTag.minor > latestTag.minor:  
-                    latestTag = currentTag
-                    continue
-                elif currentTag.minor < latestTag.minor:
+                elif currentTag.major < selected_tag.major:
                     continue
 
-                if currentTag.patch > latestTag.patch:  
-                    latestTag = currentTag
+                if currentTag.minor > selected_tag.minor:  
+                    selected_tag = currentTag
                     continue
-                elif currentTag.patch < latestTag.patch:
+                elif currentTag.minor < selected_tag.minor:
+                    continue
+
+                if currentTag.patch > selected_tag.patch:  
+                    selected_tag = currentTag
+                    continue
+                elif currentTag.patch < selected_tag.patch:
                     continue
 
                 if not currentTag.release_type.contains("beta"):
-                    if latestTag.release_type.contains("beta"):
-                        latestTag = currentTag
+                    if selected_tag.release_type.contains("beta"):
+                        selected_tag = currentTag
                         continue
-
+        selected_version = selected_tag.tag
     project_found = False
 
     # update version in distribution file
@@ -223,18 +243,18 @@ if __name__ == "__main__":
                     # verify project name
                     if context[1] == project_name:
                         # prevent formatting
-                        size_diff = len(context[3]) - len(latestTag.tag)
+                        size_diff = len(context[3]) - len(selected_version)
 
                         context[2] = "," + " " * (len(context[2]) -1 + size_diff)
 
                         # verify current version
-                        if context[3] == latestTag.tag:
-                            print(colored(project_name + " is already up-to-date!", 'green') + " within the in ")
+                        if context[3] == selected_version:
+                            print(colored(project_name, 'blue') + " is already " + colored("up-to-date", 'green') + " within " + colored(distribution_name, 'blue'))
                             exit(0)
 
                         # upgrade
-                        print("upgrade " + project_name + " version from " + colored(context[3], 'blue') + " to " + colored(latestTag.tag, 'green'))
-                        context[3] = latestTag.tag
+                        print("upgrade " + project_name + " version from " + colored(context[3], 'blue') + " to " + colored(selected_version, 'green'))
+                        context[3] = selected_version
                         line = '"'.join(context)
                         project_found = True
                 tmpFile.write(line)
