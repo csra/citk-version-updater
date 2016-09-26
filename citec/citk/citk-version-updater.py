@@ -23,15 +23,14 @@
 # import
 from __future__ import print_function
 import argparse
+from collections import OrderedDict
+import getpass
 from git import *
 from git.objects.base import *
+import json
 import os
 import shutil
 from termcolor import colored
-import getpass
-import json
-from collections import OrderedDict
-import json
     
 
 #define
@@ -50,6 +49,7 @@ if __name__ == "__main__":
     project_file_name = "?"
     repo = None
     distribution_name = ""
+    version_to_force = ""
     
     try:
         # init
@@ -61,14 +61,16 @@ if __name__ == "__main__":
         parser.add_argument("--project", default=project_name, help='The name of the project to apply the version upgrade.')
         parser.add_argument("--citk", default=citk_path, help='Path to the citk project which contains the project and distribution descriptions.')
         parser.add_argument("--distribution", default=distribution_name, help='The name of the distribution to apply the version upgrade.')
+        parser.add_argument("--version", default=version_to_force, help='Can be used to force the version update to the given project version.')
         args = parser.parse_args()
         project_name = args.project
         citk_path = args.citk
         distribution_name = args.distribution
+        version_to_force = args.version
         
         # post init
-        project_file_name = citk_path+'/projects/'+project_name+".project"
-        tmp_repo_directory = "/tmp/" + str(getpass.getuser()) + "/" +project_name
+        project_file_name = citk_path + '/projects/' + project_name + ".project"
+        tmp_repo_directory = "/tmp/" + str(getpass.getuser()) + "/" + project_name
         distribution_file_uri = citk_path + "/distributions/" + distribution_name + ".distribution"
         distribution_tmp_file_uri = citk_path + "/distributions/." + distribution_name + ".distribution.tmp"
         
@@ -79,17 +81,30 @@ if __name__ == "__main__":
             
             # load repo
             try:
-                print ("cache repo "+colored(data["variables"]["repository"], 'blue')+" into " + colored(tmp_repo_directory, 'blue'))
+                print ("cache repo " + colored(data["variables"]["repository"], 'blue') + " into " + colored(tmp_repo_directory, 'blue'))
                 if os.path.exists(tmp_repo_directory):
                     shutil.rmtree(tmp_repo_directory)
                 repo = Repo.clone_from(data["variables"]["repository"], tmp_repo_directory)
                 assert not repo.bare
             except Exception as ex:
-                print("project repository entry could not found in project description "+colored(project_file_name, 'red'))
+                print("project repository entry could not found in project description " + colored(project_file_name, 'red'))
                 if ex.message:
-                    print("error: "+ex.message)
+                    print("error: " + ex.message)
                 exit(233)
 
+            branch_counter = len(data["variables"]["branches"])
+            
+            # remove existing branches
+            data["variables"]["branches"] = []
+            
+            # store branches
+            for branch_type in repo.branches:
+                branch = str(branch_type)
+                data["variables"]["branches"].append(branch)
+            
+            # sort branches
+            data["variables"]["branches"].sort()
+            
             tag_counter = len(data["variables"]["tags"])
 
             # remove existing tags
@@ -107,71 +122,91 @@ if __name__ == "__main__":
         with open(project_file_name, "w") as project_file:
             project_file.write(json.dumps(data, sort_keys=False, indent=4, separators=(',', ': ')))
 
+        branch_counter = len(data["variables"]["branches"]) - branch_counter;
         tag_counter = len(data["variables"]["tags"]) - tag_counter;
-        print("tags["+str(tag_counter)+"] of project " + colored(project_name, 'green') + " updated in "+colored(project_file_name, 'blue')+"!")
+        print("branch[" + str(branch_counter) + "] of project " + colored(project_name, 'green') + " updated in " + colored(project_file_name, 'blue') + "!")
+        print("tags[" + str(tag_counter) + "] of project " + colored(project_name, 'green') + " updated in " + colored(project_file_name, 'blue') + "!")
     except Exception as ex:
-        print("tags of project " + colored(project_name, 'red') + " not updated in "+colored(project_file_name, 'blue')+"!")
+        print("versions [branches|tags] of project " + colored(project_name, 'red') + " not updated in " + colored(project_file_name, 'blue') + "!")
         if ex.message:
-            print("error: "+ex.message)
+            print("error: " + ex.message)
         exit(1)
 
+    # check if forced version is available
+    if version_to_force:
+        forced_version_verified = False
+        for tag_type in repo.tags:
+            if version_to_force == str(tag_type):
+                forced_version_verified = True
+        for branch_type in repo.branches:
+            if version_to_force == str(tag_type):
+                forced_version_verified = True
+        if not forced_version_verified:
+            print("error: the forced version " + colored(version_to_force, 'red') + " is not available for " + colored(project_file_name, 'blue') + "!")
+            exit(1);        
+    
+    # check if distribution updated is needed
     if not distribution_name:
         print("skip project upgrade within distribution because no distribution was defined!")
         shutil.rmtree(tmp_repo_directory)
         exit(0)
     
+    if version_to_force:
+        # force version
+        latestTag = version_to_force
+    else:
+        # dectect version
+        for tag_type in repo.tags:
+            tag = str(tag_type)
+            # skip if non regular version
+            if not tag.startswith('v'):
+                print("skip tag:" + tag)
+                continue
 
-    for tag_type in repo.tags:
-        tag = str(tag_type)
-        # skip if non regular version
-        if not tag.startswith('v'):
-            print("skip tag:" + tag)
-            continue
+            #print("found: " + tag)
+            tagSplit = tag.split('-')
+            versionSplit = tagSplit[0].split('.')
+            major_version = int(versionSplit[0].replace("v", ""))
+            minor_version = int(versionSplit[1])
+            patch_version = int(versionSplit[2])
 
-        #print("found: " + tag)
-        tagSplit = tag.split('-')
-        versionSplit = tagSplit[0].split('.')
-        major_version = int(versionSplit[0].replace("v", ""))
-        minor_version = int(versionSplit[1])
-        patch_version = int(versionSplit[2])
+            if len(tagSplit) > 1:
+                releaseType = tagSplit[1]
+            else:
+                releaseType = "stable"
 
-        if len(tagSplit) > 1:
-            releaseType = tagSplit[1]
-        else:
-            releaseType = "stable"
+            #print("detected: major[" + str(major_version) + "] minor[" + str(minor_version) + "] patch[" + str(patch_version) + "] type[" + str(releaseType) + "]")
 
-        #print("detected: major[" + str(major_version) + "] minor[" + str(minor_version) + "] patch[" + str(patch_version) + "] type[" + str(releaseType) + "]")
+            currentTag = Version(major_version, minor_version, patch_version, releaseType, tag)
 
-        currentTag = Version(major_version, minor_version, patch_version, releaseType, tag)
-
-        try:
-            latestTag
-        except NameError:
-            latestTag = currentTag
-            continue
-        else:
-            if currentTag.major > latestTag.major:  
+            try:
+                latestTag
+            except NameError:
                 latestTag = currentTag
                 continue
-            elif currentTag.major < latestTag.major:
-                continue
-
-            if currentTag.minor > latestTag.minor:  
-                latestTag = currentTag
-                continue
-            elif currentTag.minor < latestTag.minor:
-                continue
-
-            if currentTag.patch > latestTag.patch:  
-                latestTag = currentTag
-                continue
-            elif currentTag.patch < latestTag.patch:
-                continue
-
-            if not currentTag.release_type.contains("beta"):
-                if latestTag.release_type.contains("beta"):
+            else:
+                if currentTag.major > latestTag.major:  
                     latestTag = currentTag
                     continue
+                elif currentTag.major < latestTag.major:
+                    continue
+
+                if currentTag.minor > latestTag.minor:  
+                    latestTag = currentTag
+                    continue
+                elif currentTag.minor < latestTag.minor:
+                    continue
+
+                if currentTag.patch > latestTag.patch:  
+                    latestTag = currentTag
+                    continue
+                elif currentTag.patch < latestTag.patch:
+                    continue
+
+                if not currentTag.release_type.contains("beta"):
+                    if latestTag.release_type.contains("beta"):
+                        latestTag = currentTag
+                        continue
 
     project_found = False
 
