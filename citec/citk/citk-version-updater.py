@@ -53,7 +53,7 @@ if __name__ == "__main__":
     
     try:
         # init
-        citk_path = "/home/" + str(getpass.getuser()) + "/workspace/csra/citk"
+        citk_path = expanduser("~") + "/workspace/csra/citk"
         project_name = str(os.path.relpath(".", ".."))
 
         # parse command line
