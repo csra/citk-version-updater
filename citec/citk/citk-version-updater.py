@@ -94,7 +94,7 @@ if __name__ == "__main__":
             except Exception as ex:
                 print("project repository entry could not found in project description " + colored(project_file_name, 'red'))
                 if ex.message:
-                    print("error: " + ex.message)
+                    print(colored("ERROR", 'red') + ": " + ex.message)
                     if verbose_flag:
                         print (ex)
                 exit(233)
@@ -117,6 +117,10 @@ if __name__ == "__main__":
                     
                 # filter head
                 if branch_type.remote_head == "HEAD":
+                    continue
+                    
+                # filter origin refs
+                if branch_type.remote_head.startswith("origin"):
                     continue
                     
                 branch = str(branch_type.remote_head)
@@ -149,13 +153,13 @@ if __name__ == "__main__":
         branch_counter = len(data["variables"]["branches"]) - branch_counter;
         tag_counter = len(data["variables"]["tags"]) - tag_counter;
         if branch_counter != 0:
-            print("branch[" + str(branch_counter) + "] of project " + colored(project_name, 'green') + " updated in " + colored(project_file_name, 'blue') + "!")
+            print("update " + colored(str(branch_counter), 'green') + " branch" + ("" if branch_counter == 1 else "s") + " of project " + colored(project_name, 'green') + " in " + colored(project_file_name, 'blue') + "!")
         if tag_counter != 0:
-            print("tags[" + str(tag_counter) + "] of project " + colored(project_name, 'green') + " updated in " + colored(project_file_name, 'blue') + "!")
+            print("update " + colored(str(tag_counter), 'green') + " tag" + ("" if tag_counter == 1 else "s") + " of project " + colored(project_name, 'green') + " in " + colored(project_file_name, 'blue') + "!")
     except Exception as ex:
         print("versions [branches|tags] of project " + colored(project_name, 'red') + " not updated in " + colored(project_file_name, 'blue') + "!")
         if ex.message:
-            print("error: " + ex.message)
+            print(colored("ERROR", 'red') + ": " + ex.message)
             if verbose_flag:
                 print (ex)
         exit(1)
@@ -178,7 +182,7 @@ if __name__ == "__main__":
             if version_to_force == str(branch_type.remote_head):
                 forced_version_verified = True
         if not forced_version_verified:
-            print("error: the forced version " + colored(version_to_force, 'red') + " is not available for " + colored(project_name, 'blue'))
+            print(colored("ERROR", 'red') + ": the forced version " + colored(version_to_force, 'red') + " is not available for " + colored(project_name, 'blue'))
             exit(1);        
     
     # check if distribution updated is needed
@@ -192,7 +196,7 @@ if __name__ == "__main__":
         selected_version = version_to_force
     else:
         if len(repo.tags) == 0:
-            print("error: " + colored("no tags", 'red') + " available for project " + colored(project_name, 'blue'))
+            print(colored("ERROR", 'red') + ": " + colored("no tags", 'red') + " available for project " + colored(project_name, 'blue'))
             exit(22)
         
         # dectect version
@@ -265,7 +269,7 @@ if __name__ == "__main__":
                     selected_tag = current_tag
                     continue
         if not selected_tag.tag:
-            print("error: " + colored("no valid tags", 'red') + " available for project " + colored(project_name, 'blue'))
+            print(colored("ERROR", 'red') + ": " + colored("no valid tags", 'red') + " available for project " + colored(project_name, 'blue'))
             exit(23)
         selected_version = selected_tag.tag
     project_found = False
