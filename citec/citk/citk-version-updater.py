@@ -207,18 +207,26 @@ if __name__ == "__main__":
                 print("skip tag:" + tag)
                 continue
 
-            #print("found: " + tag)
+            #print("## found: " + tag)
             tagSplit = tag.split('-')
             versionSplit = tagSplit[0].split('.')
             major_version = int(versionSplit[0].replace("v", ""))
-            minor_version = int(versionSplit[1])
-            patch_version = int(versionSplit[2])
+
+            if len(versionSplit) >= 2:
+                minor_version = int(versionSplit[1])
+            else:
+                minor_version = 0
+
+            if len(versionSplit) >= 3:
+                patch_version = int(versionSplit[2])
+            else:
+                patch_version = 0
             
             if len(versionSplit) >= 4:
                 build_number = int(versionSplit[3])
             else:
                 build_number = None
-
+            
             if len(tagSplit) > 1:
                 releaseType = tagSplit[1]
             else:
