@@ -3,9 +3,9 @@
 
 ###################################################################
 #                                                                 #
-# Copyright (C) 2016 Divine Threepwood                            #
+# Copyright (C) 2016 - 2017 Divine Threepwood                     #
 #                                                                 #
-# File   : screenservice.py                                       #
+# File   : citk-version-updater.py                                #
 # Authors: Divine Threepwood (Marian Pohling)                     #
 #                                                                 #
 #                                                                 #
