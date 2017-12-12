@@ -10,7 +10,9 @@ WHITE='\033[0;37m'
 APP_NAME='citk-version-updater'
 APP_NAME=${BLUE}${APP_NAME}${NC}
 echo -e "=== ${APP_NAME} project ${WHITE}cleanup${NC}" &&
-mvn clean --quiet $@ &&
+rm -rf CitkProjectUpdater.egg-info/ dist/ &&
 echo -e "=== ${APP_NAME} project ${WHITE}installation${NC}" &&
-python setup.py install --prefix=$prefix
+python setup.py install --prefix=$prefix > /dev/null
+echo -e "=== ${APP_NAME} project ${WHITE}cleanup${NC}" &&
+rm -rf CitkProjectUpdater.egg-info/ dist/ &&
 echo -e "=== ${APP_NAME} was ${GREEN}successfully${NC} installed to ${WHITE}${prefix}${NC}"
