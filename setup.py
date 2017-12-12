@@ -21,5 +21,5 @@ setup (
        # could also include long_description, download_url, classifiers, etc.
        
        # Declare your packages' dependencies here, for eg:
-       install_requires = ['gitpython'],
+       install_requires = ['GitPython', 'termcolor'],
 )
