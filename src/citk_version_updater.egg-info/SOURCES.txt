@@ -1,0 +1,9 @@
+setup.py
+src/citk_version_updater/__init__.py
+src/citk_version_updater/main.py
+src/citk_version_updater.egg-info/PKG-INFO
+src/citk_version_updater.egg-info/SOURCES.txt
+src/citk_version_updater.egg-info/dependency_links.txt
+src/citk_version_updater.egg-info/entry_points.txt
+src/citk_version_updater.egg-info/requires.txt
+src/citk_version_updater.egg-info/top_level.txt

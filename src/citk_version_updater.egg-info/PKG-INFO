@@ -1,0 +1,10 @@
+Metadata-Version: 1.0
+Name: citk-version-updater
+Version: 0.2
+Summary: UNKNOWN
+Home-page: https://github.com/csra
+Author: DivineThreepwood
+Author-email: divine@openbase.org
+License: LGPLv3
+Description: Upgrade tool for citk projects. Project tags are synchronized with the remote repository and the latest release can be configured for a given distribution.
+Platform: UNKNOWN

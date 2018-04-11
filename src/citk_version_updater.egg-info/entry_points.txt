@@ -1,0 +1,3 @@
+[console_scripts]
+citk-version-updater = citk_version_updater.main:entry_point
+

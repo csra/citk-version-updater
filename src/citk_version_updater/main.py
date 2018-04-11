@@ -5,7 +5,7 @@
 #                                                                 #
 # Copyright (C) 2016 - 2017 Divine Threepwood                     #
 #                                                                 #
-# File   : citk-version-updater.py                                #
+# File   : main.py                                #
 # Authors: Divine Threepwood (Marian Pohling)                     #
 #                                                                 #
 #                                                                 #
@@ -44,7 +44,10 @@ class Version(object):
         self.release_type = release_type
         self.tag = tag
 
-if __name__ == "__main__":
+def entry_point():
+    exit(main())
+
+def main(argv=None):
     
     # pre init
     project_name = "?"
@@ -66,7 +69,7 @@ if __name__ == "__main__":
         parser.add_argument("--distribution", default=distribution_name, help='The name of the distribution to apply the version upgrade.')
         parser.add_argument("--version", default=version_to_force, help='Can be used to force the version update to the given project version.')
         parser.add_argument("-v", default=verbose_flag, help='Enable this verbose flag to get more logging and exception printing during application errors.', action='store_true')
-        args = parser.parse_args()
+        args = parser.parse_args(argv)
         project_name = args.project
         citk_path = args.citk
         distribution_name = args.distribution
@@ -97,7 +100,7 @@ if __name__ == "__main__":
                     print(colored("ERROR", 'red') + ": " + ex.message)
                     if verbose_flag:
                         print (ex)
-                exit(233)
+                return 233
 
             # count existing branches
             if "branches" not in data["variables"]:
@@ -160,9 +163,9 @@ if __name__ == "__main__":
         print("versions [branches|tags] of project " + colored(project_name, 'red') + " not updated in " + colored(project_file_name, 'blue') + "!")
         if ex.message:
             print(colored("ERROR", 'red') + ": " + ex.message)
-            if verbose_flag:
-                print (ex)
-        exit(1)
+            #if verbose_flag:
+            print (ex)
+        return 1
 
     # check if forced version is available
     if version_to_force:
@@ -183,13 +186,13 @@ if __name__ == "__main__":
                 forced_version_verified = True
         if not forced_version_verified:
             print(colored("ERROR", 'red') + ": the forced version " + colored(version_to_force, 'red') + " is not available for " + colored(project_name, 'blue'))
-            exit(1);        
+            return 1
     
     # check if distribution updated is needed
     if not distribution_name:
         print("skip project upgrade within distribution because no distribution was defined!")
         shutil.rmtree(tmp_repo_directory)
-        exit(0)
+        return 0
     
     if version_to_force:
         # force version
@@ -197,7 +200,7 @@ if __name__ == "__main__":
     else:
         if len(repo.tags) == 0:
             print(colored("ERROR", 'red') + ": " + colored("no tags", 'red') + " available for project " + colored(project_name, 'blue'))
-            exit(22)
+            return 22
         
         # dectect version
         for tag_type in repo.tags:
@@ -278,7 +281,7 @@ if __name__ == "__main__":
                     continue
         if not selected_tag.tag:
             print(colored("ERROR", 'red') + ": " + colored("no valid tags", 'red') + " available for project " + colored(project_name, 'blue'))
-            exit(23)
+            return 23
         selected_version = selected_tag.tag
     project_found = False
 
@@ -302,7 +305,7 @@ if __name__ == "__main__":
                         # verify current version
                         if context[3] == selected_version:
                             print(colored(project_name, 'blue') + " is already " + colored("up-to-date", 'green') + " within " + colored(distribution_name, 'blue'))
-                            exit(0)
+                            return 0
 
                         # upgrade
                         print("upgrade " + project_name + " version from " + colored(context[3], 'blue') + " to " + colored(selected_version, 'green'))
@@ -313,7 +316,7 @@ if __name__ == "__main__":
 
     if not project_found:       
         print("project " + colored(project_name, 'blue') + " skipped! " + colored("Entry not found", 'yellow') + " in " + colored(distribution_file_uri, 'blue'))
-        exit(0)
+        return 0
 
     # write back and cleanup
     shutil.rmtree(tmp_repo_directory)
