@@ -10,7 +10,7 @@ setup (
     author='DivineThreepwood',
     author_email='divine@openbase.org',
 
-    summary='A small tool to detect release versions of a citk project via scm and to '
+    description='A small tool to detect release versions of a citk project via scm and to '
            'update those versions in the project recipe. '
            'Additionally a specific version can be set within a defined distribution file as well.',
     url='https://github.com/csra/citk-version-updater',
