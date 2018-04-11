@@ -178,3 +178,6 @@ gen-external-apklibs
 ### Vim temporary files ###
 *.swp
 
+### Project Custom
+
+src/*.egg-info
