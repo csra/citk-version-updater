@@ -16,11 +16,18 @@ echo -e "=== ${APP_NAME} project ${WHITE}cleanup${NC}" &&
 rm -rf build/ dist/ &&
 echo -e "=== ${APP_NAME} project ${WHITE}installation${NC}"
 
-if [ -z ${var+x} ]; then
+if [ -z ${prefix+x} ]; then
     python setup.py install > /dev/null 
 else 
     python setup.py install --prefix=$prefix > /dev/null
 fi
 echo -e "=== ${APP_NAME} project ${WHITE}cleanup${NC}" &&
-rm -rf build/ dist/ &&
-echo -e "=== ${APP_NAME} was ${GREEN}successfully${NC} installed to ${WHITE}${prefix}${NC}"
+rm -rf build/ dist/
+
+if [ -z ${prefix+x} ]; then
+    echo -e "=== ${APP_NAME} was ${GREEN}successfully${NC} installed"
+else 
+    echo -e "=== ${APP_NAME} was ${GREEN}successfully${NC} installed to ${WHITE}${prefix}${NC}"
+fi
+
+
