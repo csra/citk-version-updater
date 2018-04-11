@@ -82,7 +82,6 @@ def main(argv=None):
             _LOGGER.info("verbose mode enabled")
             _LOGGER.setLevel(logging.DEBUG)
         else:
-            _LOGGER.info("verbose mode disabled")
             _LOGGER.setLevel(logging.INFO)
         
         # post init
