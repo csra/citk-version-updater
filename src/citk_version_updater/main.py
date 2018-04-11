@@ -26,13 +26,16 @@ import argparse
 from collections import OrderedDict
 import getpass
 from git import *
-from git.objects.base import *
 import json
 import os
 from os.path import expanduser
 import shutil
 from termcolor import colored
-    
+import coloredlogs, logging
+
+coloredlogs.install()
+_LOGGER = logging.getLogger(__name__)
+_LOGGER.addHandler(logging.NullHandler())
 
 #define
 class Version(object):
@@ -55,8 +58,7 @@ def main(argv=None):
     repo = None
     distribution_name = ""
     version_to_force = ""
-    verbose_flag = False
-    
+
     try:
         # init
         citk_path = expanduser("~") + "/workspace/csra/citk"
@@ -68,16 +70,23 @@ def main(argv=None):
         parser.add_argument("--citk", default=citk_path, help='Path to the citk project which contains the project and distribution descriptions.')
         parser.add_argument("--distribution", default=distribution_name, help='The name of the distribution to apply the version upgrade.')
         parser.add_argument("--version", default=version_to_force, help='Can be used to force the version update to the given project version.')
-        parser.add_argument("-v", default=verbose_flag, help='Enable this verbose flag to get more logging and exception printing during application errors.', action='store_true')
+        parser.add_argument("-v", help='Enable this verbose flag to get more logging and exception printing during application errors.', action='store_true')
         args = parser.parse_args(argv)
         project_name = args.project
         citk_path = args.citk
         distribution_name = args.distribution
         version_to_force = args.version
-        verbose_flag = args.v
+
+        # config logger
+        if args.v:
+            _LOGGER.info("verbose mode enabled")
+            _LOGGER.setLevel(logging.DEBUG)
+        else:
+            _LOGGER.info("verbose mode disabled")
+            _LOGGER.setLevel(logging.INFO)
         
         # post init
-        project_file_name = citk_path + '/projects/' + project_name + ".project"
+        project_file_name = os.path.join(citk_path, "projects", project_name + ".project")
         tmp_repo_directory = "/tmp/" + str(getpass.getuser()) + "/" + project_name
         distribution_file_uri = citk_path + "/distributions/" + distribution_name + ".distribution"
         distribution_tmp_file_uri = citk_path + "/distributions/." + distribution_name + ".distribution.tmp"
@@ -89,17 +98,16 @@ def main(argv=None):
             
             # load repo
             try:
-                #print ("cache repo " + colored(data["variables"]["repository"], 'blue') + " into " + colored(tmp_repo_directory, 'blue'))
+                _LOGGER.debug("cache repo " + colored(data["variables"]["repository"], 'blue') + " into " + colored(tmp_repo_directory, 'blue'))
                 if os.path.exists(tmp_repo_directory):
                     shutil.rmtree(tmp_repo_directory)
                 repo = Repo.clone_from(data["variables"]["repository"], tmp_repo_directory)
                 assert not repo.bare
             except Exception as ex:
-                print("project repository entry could not found in project description " + colored(project_file_name, 'red'))
+                _LOGGER.info("project repository entry could not found in project description " + colored(project_file_name, 'red'))
                 if ex.message:
-                    print(colored("ERROR", 'red') + ": " + ex.message)
-                    if verbose_flag:
-                        print (ex)
+                    _LOGGER.error(colored("ERROR", 'red') + ": " + ex.message)
+                    _LOGGER.debug(ex, exc_info=True)
                 return 233
 
             # count existing branches
@@ -156,15 +164,14 @@ def main(argv=None):
         branch_counter = len(data["variables"]["branches"]) - branch_counter;
         tag_counter = len(data["variables"]["tags"]) - tag_counter;
         if branch_counter != 0:
-            print("update " + colored(str(branch_counter), 'green') + " branch" + ("" if branch_counter == 1 else "s") + " of project " + colored(project_name, 'green') + " in " + colored(project_file_name, 'blue') + "!")
+            _LOGGER.info("update " + colored(str(branch_counter), 'green') + " branch" + ("" if branch_counter == 1 else "s") + " of project " + colored(project_name, 'green') + " in " + colored(project_file_name, 'blue') + "!")
         if tag_counter != 0:
-            print("update " + colored(str(tag_counter), 'green') + " tag" + ("" if tag_counter == 1 else "s") + " of project " + colored(project_name, 'green') + " in " + colored(project_file_name, 'blue') + "!")
+            _LOGGER.info("update " + colored(str(tag_counter), 'green') + " tag" + ("" if tag_counter == 1 else "s") + " of project " + colored(project_name, 'green') + " in " + colored(project_file_name, 'blue') + "!")
     except Exception as ex:
-        print("versions [branches|tags] of project " + colored(project_name, 'red') + " not updated in " + colored(project_file_name, 'blue') + "!")
+        _LOGGER.info("versions [branches|tags] of project " + colored(project_name, 'red') + " not updated in " + colored(project_file_name, 'blue') + "!")
         if ex.message:
-            print(colored("ERROR", 'red') + ": " + ex.message)
-            #if verbose_flag:
-            print (ex)
+            _LOGGER.error(colored("ERROR", 'red') + ": " + ex.message)
+            _LOGGER.debug(ex, exc_info=True)
         return 1
 
     # check if forced version is available
@@ -185,12 +192,12 @@ def main(argv=None):
             if version_to_force == str(branch_type.remote_head):
                 forced_version_verified = True
         if not forced_version_verified:
-            print(colored("ERROR", 'red') + ": the forced version " + colored(version_to_force, 'red') + " is not available for " + colored(project_name, 'blue'))
+            _LOGGER.error(colored("ERROR", 'red') + ": the forced version " + colored(version_to_force, 'red') + " is not available for " + colored(project_name, 'blue'))
             return 1
     
     # check if distribution updated is needed
     if not distribution_name:
-        print("skip project upgrade within distribution because no distribution was defined!")
+        _LOGGER.info("skip project upgrade within distribution because no distribution was defined!")
         shutil.rmtree(tmp_repo_directory)
         return 0
     
@@ -199,7 +206,7 @@ def main(argv=None):
         selected_version = version_to_force
     else:
         if len(repo.tags) == 0:
-            print(colored("ERROR", 'red') + ": " + colored("no tags", 'red') + " available for project " + colored(project_name, 'blue'))
+            _LOGGER.error(colored("ERROR", 'red') + ": " + colored("no tags", 'red') + " available for project " + colored(project_name, 'blue'))
             return 22
         
         # dectect version
@@ -207,10 +214,10 @@ def main(argv=None):
             tag = str(tag_type)
             # skip if non regular version
             if not tag.startswith('v'):
-                print("skip tag:" + tag)
+                _LOGGER.debug("skip tag[" + tag + "] because it starts not with letter v")
                 continue
 
-            #print("## found: " + tag)
+                _LOGGER.debug("## found: " + tag)
             tagSplit = tag.split('-')
             versionSplit = tagSplit[0].split('.')
             major_version = int(versionSplit[0].replace("v", ""))
@@ -235,7 +242,7 @@ def main(argv=None):
             else:
                 releaseType = "stable"
 
-            #print("detected: major[" + str(major_version) + "] minor[" + str(minor_version) + "] patch[" + str(patch_version) + "] type[" + str(releaseType) + "]")
+            _LOGGER.debug("detected: major[" + str(major_version) + "] minor[" + str(minor_version) + "] patch[" + str(patch_version) + "] type[" + str(releaseType) + "]")
 
             current_tag = Version(major_version, minor_version, patch_version, build_number, releaseType, tag)
 
@@ -280,19 +287,18 @@ def main(argv=None):
                     selected_tag = current_tag
                     continue
         if not selected_tag.tag:
-            print(colored("ERROR", 'red') + ": " + colored("no valid tags", 'red') + " available for project " + colored(project_name, 'blue'))
+            _LOGGER.error(colored("ERROR", 'red') + ": " + colored("no valid tags", 'red') + " available for project " + colored(project_name, 'blue'))
             return 23
         selected_version = selected_tag.tag
     project_found = False
 
     # update version in distribution file
     with open(distribution_tmp_file_uri, 'w') as tmpFile:
-        #print("detect projects...")
+        _LOGGER.debug("detect projects...")
         with open(distribution_file_uri) as distributionFile:
             for line in distributionFile.readlines():
-                #print("lines...")
                 if project_name in line:
-                    #print("found project :   " + str(line))
+                    _LOGGER.debug("found project :   " + str(line))
                     context = line.split('"')
 
                     # verify project name
@@ -304,18 +310,18 @@ def main(argv=None):
 
                         # verify current version
                         if context[3] == selected_version:
-                            print(colored(project_name, 'blue') + " is already " + colored("up-to-date", 'green') + " within " + colored(distribution_name, 'blue'))
+                            _LOGGER.info(colored(project_name, 'blue') + " is already " + colored("up-to-date", 'green') + " within " + colored(distribution_name, 'blue'))
                             return 0
 
                         # upgrade
-                        print("upgrade " + project_name + " version from " + colored(context[3], 'blue') + " to " + colored(selected_version, 'green'))
+                            _LOGGER.info("upgrade " + project_name + " version from " + colored(context[3], 'blue') + " to " + colored(selected_version, 'green'))
                         context[3] = selected_version
                         line = '"'.join(context)
                         project_found = True
                 tmpFile.write(line)
 
-    if not project_found:       
-        print("project " + colored(project_name, 'blue') + " skipped! " + colored("Entry not found", 'yellow') + " in " + colored(distribution_file_uri, 'blue'))
+    if not project_found:
+        _LOGGER.warn("project " + colored(project_name, 'blue') + " skipped! " + colored("Entry not found", 'yellow') + " in " + colored(distribution_file_uri, 'blue'))
         return 0
 
     # write back and cleanup
