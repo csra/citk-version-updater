@@ -180,4 +180,12 @@ gen-external-apklibs
 
 ### Project Custom
 
+include/
+lib/
+local/
+pip-selfcheck.json
+share/
+dist/
+build/
+
 src/*.egg-info

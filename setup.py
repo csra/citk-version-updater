@@ -19,6 +19,7 @@ setup (
 
     packages=find_packages('src'),
     package_dir={'': 'src'},
+    zip_safe=True,
 
     # Declare your packages' dependencies here, for eg:
     install_requires=['GitPython', 'termcolor'],
