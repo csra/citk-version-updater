@@ -13,7 +13,7 @@ setup (
     summary='A small tool to detect release versions of a citk project via scm and to '
            'update those versions in the project recipe. '
            'Additionally a specific version can be set within a defined distribution file as well.',
-    url='https://github.com/csra',
+    url='https://github.com/csra/citk-version-updater',
     license="LGPLv3",
     long_description='Upgrade tool for citk projects. Project tags are synchronized with the remote repository and the latest release can be configured for a given distribution.',
 
