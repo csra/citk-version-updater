@@ -22,7 +22,7 @@ setup (
     zip_safe=True,
 
     # Declare your packages' dependencies here, for eg:
-    install_requires=['GitPython', 'termcolor'],
+    install_requires=['GitPython', 'termcolor', 'coloredlogs', 'logging'],
 
     entry_points={
         "console_scripts": [
