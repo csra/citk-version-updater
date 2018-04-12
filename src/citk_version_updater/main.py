@@ -319,7 +319,7 @@ def main(argv=None):
                 tmpFile.write(line)
 
     if not project_found:
-        _LOGGER.warning("project " + colored(project_name, 'blue') + " skipped! " + colored("Entry not found", 'yellow') + " in " + colored(distribution_file_uri, 'blue'))
+        _LOGGER.debug("project " + colored(project_name, 'blue') + " skipped! " + colored("Entry not found", 'yellow') + " in " + colored(distribution_file_uri, 'blue'))
         return 0
 
     # write back and cleanup
