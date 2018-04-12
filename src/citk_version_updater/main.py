@@ -88,7 +88,12 @@ def main(argv=None):
         tmp_repo_directory = "/tmp/" + str(getpass.getuser()) + "/" + project_name
         distribution_file_uri = citk_path + "/distributions/" + distribution_name + ".distribution"
         distribution_tmp_file_uri = citk_path + "/distributions/." + distribution_name + ".distribution.tmp"
-        
+
+        # verify
+        if not os.path.exists(distribution_file_uri):
+            raise ValueError(
+                "distribution " + colored(str(distribution_file_uri), 'red') + " does not exist!")
+
         # load and process
         with open(project_file_name, "r+") as project_file:
             
@@ -323,7 +328,8 @@ def main(argv=None):
         return 0
 
     # write back and cleanup
-    shutil.rmtree(tmp_repo_directory)
+    if os.path.exists(tmp_repo_directory):
+        shutil.rmtree(tmp_repo_directory)
     shutil.move(distribution_tmp_file_uri, distribution_file_uri)
     
                    
