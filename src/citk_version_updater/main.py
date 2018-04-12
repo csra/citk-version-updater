@@ -79,7 +79,6 @@ def main(argv=None):
 
         # config logger
         if args.v:
-            _LOGGER.info("verbose mode enabled")
             _LOGGER.setLevel(logging.DEBUG)
         else:
             _LOGGER.setLevel(logging.INFO)
@@ -320,7 +319,7 @@ def main(argv=None):
                 tmpFile.write(line)
 
     if not project_found:
-        _LOGGER.warn("project " + colored(project_name, 'blue') + " skipped! " + colored("Entry not found", 'yellow') + " in " + colored(distribution_file_uri, 'blue'))
+        _LOGGER.warning("project " + colored(project_name, 'blue') + " skipped! " + colored("Entry not found", 'yellow') + " in " + colored(distribution_file_uri, 'blue'))
         return 0
 
     # write back and cleanup
