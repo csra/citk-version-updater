@@ -19,7 +19,7 @@ setup(
     package_dir={'': 'src'},
     zip_safe=True,
 
-    install_requires=['GitPython', 'termcolor', 'coloredlogs', 'logging'],
+    install_requires=['GitPython', 'termcolor', 'coloredlogs'],
 
     entry_points={
         "console_scripts": [
