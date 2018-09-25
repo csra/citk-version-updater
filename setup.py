@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='citk_version_updater',
-    version='0.2',
+    version='0.3',
 
     author='DivineThreepwood',
     author_email='divine@openbase.org',
