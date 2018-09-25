@@ -19,7 +19,7 @@ setup(
     package_dir={'': 'src'},
     zip_safe=True,
 
-    install_requires=['GitPython', 'termcolor', 'coloredlogs'],
+    install_requires=['oyaml', 'GitPython', 'termcolor', 'coloredlogs'],
 
     entry_points={
         "console_scripts": [

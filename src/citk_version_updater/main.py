@@ -26,12 +26,12 @@ import argparse
 from collections import OrderedDict
 import getpass
 from git import *
-import json
 import os
 from os.path import expanduser
 import shutil
 from termcolor import colored
 import coloredlogs, logging
+import oyaml as yaml
 
 coloredlogs.install()
 _LOGGER = logging.getLogger(__name__)
@@ -64,14 +64,22 @@ def main(argv=None):
         citk_path = expanduser("~") + "/workspace/csra/citk"
         project_name = str(os.path.relpath(".", ".."))
 
-        # parse command line
+        # setup command line
         parser = argparse.ArgumentParser(description='Script upgrades te given project within the distribution file.')
         parser.add_argument("--project", default=project_name, help='The name of the project to apply the version upgrade.')
         parser.add_argument("--citk", default=citk_path, help='Path to the citk project which contains the project and distribution descriptions.')
         parser.add_argument("--distribution", default=distribution_name, help='The name of the distribution to apply the version upgrade.')
         parser.add_argument("--version", default=version_to_force, help='Can be used to force the version update to the given project version.')
         parser.add_argument("-v", help='Enable this verbose flag to get more logging and exception printing during application errors.', action='store_true')
-        args = parser.parse_args(argv)
+
+        # print proper help screen if no arguments are given
+        if len(argv) == 1:
+            parser.print_help()
+            return 1
+
+        # parse command line
+        args = parser.parse_args()
+
         project_name = args.project
         citk_path = args.citk
         distribution_name = args.distribution
@@ -80,6 +88,8 @@ def main(argv=None):
         # config logger
         if args.v:
             _LOGGER.setLevel(logging.DEBUG)
+            coloredlogs.install(level='DEBUG', logger=_LOGGER)
+            _LOGGER.debug('Debug log enabled.')
         else:
             _LOGGER.setLevel(logging.INFO)
         
@@ -97,8 +107,9 @@ def main(argv=None):
         # load and process
         with open(project_file_name, "r+") as project_file:
             
-            data = json.load(project_file, object_pairs_hook=OrderedDict, encoding="utf-8")
-            
+            data = yaml.load(project_file)
+            #data = yaml.load(project_file, object_pairs_hook=OrderedDict, encoding="utf-8")
+
             # load repo
             try:
                 _LOGGER.debug("cache repo " + colored(data["variables"]["repository"], 'blue') + " into " + colored(tmp_repo_directory, 'blue'))
@@ -162,10 +173,10 @@ def main(argv=None):
 
         # store back
         with open(project_file_name, "w") as project_file:
-            project_file.write(json.dumps(data, sort_keys=False, indent=4, separators=(',', ': '), encoding="utf-8"))
+            project_file.write(yaml.dump(data, allow_unicode=True, default_flow_style=False, encoding="utf-8"))
 
-        branch_counter = len(data["variables"]["branches"]) - branch_counter;
-        tag_counter = len(data["variables"]["tags"]) - tag_counter;
+        branch_counter = len(data["variables"]["branches"]) - branch_counter
+        tag_counter = len(data["variables"]["tags"]) - tag_counter
         if branch_counter != 0:
             _LOGGER.info("update " + colored(str(branch_counter), 'green') + " branch" + ("" if branch_counter == 1 else "s") + " of project " + colored(project_name, 'green') + " in " + colored(project_file_name, 'blue') + "!")
         if tag_counter != 0:
@@ -302,24 +313,24 @@ def main(argv=None):
             for line in distributionFile.readlines():
                 if project_name in line:
                     _LOGGER.debug("found project :   " + str(line))
-                    context = line.split('"')
+                    context = line.split('@')
 
                     # verify project name
-                    if context[1] == project_name:
+                    if str(context[0]).startswith("- " + project_name):
                         # prevent formatting
-                        size_diff = len(context[3]) - len(selected_version)
+                        #size_diff = len(context[3]) - len(selected_version)
 
-                        context[2] = "," + " " * (len(context[2]) -1 + size_diff)
+                        #context[2] = "," + " " * (len(context[2]) -1 + size_diff)
 
                         # verify current version
-                        if context[3] == selected_version:
+                        if context[1] == selected_version+ "\n":
                             _LOGGER.info(colored(project_name, 'blue') + " is already " + colored("up-to-date", 'green') + " within " + colored(distribution_name, 'blue'))
                             return 0
 
                         # upgrade
-                            _LOGGER.info("upgrade " + project_name + " version from " + colored(context[3], 'blue') + " to " + colored(selected_version, 'green'))
-                        context[3] = selected_version
-                        line = '"'.join(context)
+                        _LOGGER.info("upgrade " + project_name + " version from " + colored(str(context[1]).replace("\n", ""), 'blue') + " to " + colored(selected_version, 'green'))
+                        context[1] = selected_version + "\n"
+                        line = '@'.join(context)
                         project_found = True
                 tmpFile.write(line)
 
@@ -331,7 +342,10 @@ def main(argv=None):
     if os.path.exists(tmp_repo_directory):
         shutil.rmtree(tmp_repo_directory)
     shutil.move(distribution_tmp_file_uri, distribution_file_uri)
-    
+
+if __name__ == '__main__':
+    import sys
+    exit(main(sys.argv))
                    
                 
 
