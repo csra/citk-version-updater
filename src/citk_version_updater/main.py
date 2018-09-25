@@ -70,6 +70,8 @@ def main(argv=None):
         parser.add_argument("--citk", default=citk_path, help='Path to the citk project which contains the project and distribution descriptions.')
         parser.add_argument("--distribution", default=distribution_name, help='The name of the distribution to apply the version upgrade.')
         parser.add_argument("--version", default=version_to_force, help='Can be used to force the version update to the given project version.')
+        parser.add_argument("--dry-run", help='This mode does not push modified changes to any git repositories.',
+                            action='store_true')
         parser.add_argument("-v", help='Enable this verbose flag to get more logging and exception printing during application errors.', action='store_true')
 
         # print proper help screen if no arguments are given
@@ -172,8 +174,9 @@ def main(argv=None):
             data["variables"]["tags"].sort()
 
         # store back
-        with open(project_file_name, "w") as project_file:
-            project_file.write(yaml.dump(data, allow_unicode=True, default_flow_style=False, encoding="utf-8"))
+        if not args.dry_run:
+            with open(project_file_name, "w") as project_file:
+                project_file.write(yaml.dump(data, allow_unicode=True, default_flow_style=False, encoding="utf-8"))
 
         branch_counter = len(data["variables"]["branches"]) - branch_counter
         tag_counter = len(data["variables"]["tags"]) - tag_counter
@@ -205,7 +208,7 @@ def main(argv=None):
                 
             if version_to_force == str(branch_type.remote_head):
                 forced_version_verified = True
-        if not forced_version_verified:
+        if not args.dry_run and not forced_version_verified:
             _LOGGER.error(colored("ERROR", 'red') + ": the forced version " + colored(version_to_force, 'red') + " is not available for " + colored(project_name, 'blue'))
             return 1
     
@@ -341,7 +344,9 @@ def main(argv=None):
     # write back and cleanup
     if os.path.exists(tmp_repo_directory):
         shutil.rmtree(tmp_repo_directory)
-    shutil.move(distribution_tmp_file_uri, distribution_file_uri)
+
+    if not args.dry_run:
+        shutil.move(distribution_tmp_file_uri, distribution_file_uri)
 
 if __name__ == '__main__':
     import sys
