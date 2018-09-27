@@ -23,7 +23,6 @@
 # import
 from __future__ import print_function
 import argparse
-from collections import OrderedDict
 import getpass
 from git import *
 import os
@@ -51,13 +50,6 @@ def entry_point():
     exit(main())
 
 def main(argv=None):
-    
-    # pre init
-    project_name = "?"
-    project_file_name = "?"
-    repo = None
-    distribution_name = ""
-    version_to_force = ""
 
     try:
         # init
@@ -65,22 +57,22 @@ def main(argv=None):
         project_name = str(os.path.relpath(".", ".."))
 
         # setup command line
-        parser = argparse.ArgumentParser(description='Script upgrades te given project within the distribution file.')
-        parser.add_argument("--project", default=project_name, help='The name of the project to apply the version upgrade.')
+        parser = argparse.ArgumentParser(description='Script upgrades the given project within the distribution file.')
+        parser.add_argument("--project", help='The name of the project to apply the version upgrade.')
         parser.add_argument("--citk", default=citk_path, help='Path to the citk project which contains the project and distribution descriptions.')
-        parser.add_argument("--distribution", default=distribution_name, help='The name of the distribution to apply the version upgrade.')
-        parser.add_argument("--version", default=version_to_force, help='Can be used to force the version update to the given project version.')
-        parser.add_argument("--dry-run", help='This mode does not push modified changes to any git repositories.',
-                            action='store_true')
+        parser.add_argument("--distribution", help='The name of the distribution to apply the version upgrade.')
+        parser.add_argument("--version", help='Can be used to force the version update to the given project version.')
+        parser.add_argument("--dry-run", help='This mode does not push modified changes to any git repositories.', action='store_true')
         parser.add_argument("-v", help='Enable this verbose flag to get more logging and exception printing during application errors.', action='store_true')
 
-        # print proper help screen if no arguments are given
-        if len(argv) == 1:
+        # parse command line
+        args = parser.parse_args(argv)
+
+        # print proper help screen if not all needed arguments are given
+        _LOGGER.debug(args)
+        if not all([args.project, args.distribution]):
             parser.print_help()
             return 1
-
-        # parse command line
-        args = parser.parse_args()
 
         project_name = args.project
         citk_path = args.citk
@@ -108,9 +100,7 @@ def main(argv=None):
 
         # load and process
         with open(project_file_name, "r+") as project_file:
-            
             data = yaml.load(project_file)
-            #data = yaml.load(project_file, object_pairs_hook=OrderedDict, encoding="utf-8")
 
             # load repo
             try:
@@ -319,11 +309,7 @@ def main(argv=None):
                     context = line.split('@')
 
                     # verify project name
-                    if str(context[0]).startswith("- " + project_name):
-                        # prevent formatting
-                        #size_diff = len(context[3]) - len(selected_version)
-
-                        #context[2] = "," + " " * (len(context[2]) -1 + size_diff)
+                    if str(context[0]).startswith("- " + project_name + " "):
 
                         # verify current version
                         if context[1] == selected_version+ "\n":
@@ -334,6 +320,7 @@ def main(argv=None):
                         _LOGGER.info("upgrade " + project_name + " version from " + colored(str(context[1]).replace("\n", ""), 'blue') + " to " + colored(selected_version, 'green'))
                         context[1] = selected_version + "\n"
                         line = '@'.join(context)
+                        _LOGGER.debug("update line to: " + line)
                         project_found = True
                 tmpFile.write(line)
 
@@ -348,9 +335,10 @@ def main(argv=None):
     if not args.dry_run:
         shutil.move(distribution_tmp_file_uri, distribution_file_uri)
 
+    return 0
+
 if __name__ == '__main__':
-    import sys
-    exit(main(sys.argv))
+    exit(main())
                    
                 
 
